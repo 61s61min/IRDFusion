@@ -1,0 +1,8 @@
+FLIR/
+M3FD/
+.DS_Store
+/code/data/
+/code/.ipynb_checkpoints/
+/code/work_dirs/
+/code/.DS_Store
+/.idea/
