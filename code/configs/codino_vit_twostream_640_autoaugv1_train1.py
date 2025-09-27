@@ -1,28 +1,18 @@
-# _base_ = [
-#     '../_base_/datasets/lvis_v1_instance.py',
-#     # '../_base_/default_runtime.py'
-# ]
+
 # classes = ('People',)
 # classes = ('person',)
 # classes = ('person','car','bicycle')
-# classes = ('Car', 'Truck', 'People', 'Bus', 'Lamp', 'Motor.')
-classes = ('swimmer', 'floater', 'boat', 'human', 'westperson', 'lifejacket', 'ignored',)
+classes = ('Car', 'Truck', 'People', 'Bus', 'Lamp', 'Motor.')
 num_classes = len(classes)
 
-# max_epochs = 20
+
 max_epochs = 36
-# max_epochs = 16
 
-# image_size = (1536, 1536)
-# image_size = (1280, 1280)
 image_size = (640, 640)    # clw modify
-# image_size = (960, 960)    # clw modify
-# image_size = (512, 512)    # clw modify
 
 
-# window_block_indexes = (
-    # list(range(0, 2)) + list(range(3, 5)) + list(range(6, 8)) + list(range(9, 11)) + list(range(12, 14)) + list(range(15, 17)) + list(range(18, 20)) + list(range(21, 23))
-# )
+
+
 window_block_indexes = (
     list(range(0, 3)) + list(range(4, 7)) + list(range(8, 11)) + list(range(12, 15)) + list(range(16, 19)) +
     list(range(20, 23)) + list(range(24, 27)))   # for coco
@@ -32,29 +22,22 @@ num_dec_layer = 6
 lambda_2 = 2.0
 
 model = dict(
-    # type='CoDETR',
     type='TwoStreamCoDETR',
-    # with_attn_mask=False,        # 屏蔽后默认True, 需要再把下面use_lsj=True屏蔽掉,相当于不使用lsj
     backbone=dict(
         type='ViT',
-        # img_size=640,
-        img_size=image_size[0],   # clw modify
-        # img_size=640,   # clw modify
+        img_size=image_size[0],  
         pretrain_img_size=512,
         patch_size=16,
         embed_dim=1024,
         depth=24,
         num_heads=16,
         mlp_ratio=4*2/3,
-        # drop_path_rate=0.3,
-        drop_path_rate=0.4,   # for coco
-        # window_size=16,
-        window_size=24,   # for coco
+        drop_path_rate=0.4,  
+        window_size=24,  
         window_block_indexes=window_block_indexes,
         residual_block_indexes=residual_block_indexes,
         qkv_bias=True,
         use_act_checkpoint=True,
-        # use_lsj=True,
         init_cfg=None),
     neck=dict(        
         type='SFP',
@@ -82,9 +65,7 @@ model = dict(
         loss_bbox=dict(type='L1Loss', loss_weight=1.0*num_dec_layer*lambda_2)),
     query_head=dict(
         type='CoDINOHead',
-        # num_query=900,
         num_query=1500,
-        # num_classes=1203,
         num_classes=num_classes,
         num_feature_levels=5,
         in_channels=2048,
@@ -94,7 +75,7 @@ model = dict(
         mixed_selection=True,
         dn_cfg=dict(
             type='CdnQueryGenerator',
-            noise_scale=dict(label=0.5, box=0.4),  # 0.5, 0.4 for DN-DETR
+            noise_scale=dict(label=0.5, box=0.4), 
             group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=300)),
         transformer=dict(
             type='CoDinoTransformer',
@@ -105,7 +86,7 @@ model = dict(
             encoder=dict(
                 type='DetrTransformerEncoder',
                 num_layers=6,
-                with_cp=6, # number of layers that use checkpoint
+                with_cp=6, 
                 transformerlayers=dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
@@ -155,23 +136,7 @@ model = dict(
             out_channels=256,
             featmap_strides=[4, 8, 16, 32, 64],
             finest_scale=56),
-        # bbox_head=dict(
-        #     type='Shared2FCBBoxHead',
-        #     in_channels=256,
-        #     fc_out_channels=1024,
-        #     roi_feat_size=7,
-        #     # num_classes=1203,
-        #     num_classes=num_classes,
-        #     bbox_coder=dict(
-        #         type='DeltaXYWHBBoxCoder',
-        #         target_means=[0., 0., 0., 0.],
-        #         target_stds=[0.1, 0.1, 0.2, 0.2]),
-        #     reg_class_agnostic=False,
-        #     reg_decoded_bbox=True,
-        #     loss_cls=dict(
-        #         type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0*num_dec_layer*lambda_2),
-        #     loss_bbox=dict(type='GIoULoss', loss_weight=10.0*num_dec_layer*lambda_2)))],
-        bbox_head=dict(          # for coco
+        bbox_head=dict(         
             type='ConvFCBBoxHead',
             num_shared_convs=4,
             num_shared_fcs=1,
@@ -192,7 +157,6 @@ model = dict(
             loss_bbox=dict(type='GIoULoss', loss_weight=10.0*num_dec_layer*lambda_2)))],
     bbox_head=[dict(
         type='CoATSSHead',
-        # num_classes=1203,
         num_classes=num_classes,
         in_channels=256,
         stacked_convs=1,
@@ -216,7 +180,6 @@ model = dict(
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0*num_dec_layer*lambda_2),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0*num_dec_layer*lambda_2)),],
-    # model training and testing settings
     train_cfg=[
         dict(
             assigner=dict(
@@ -286,106 +249,60 @@ model = dict(
         dict(
             nms_pre=1000,
             min_bbox_size=0,
-            # score_thr=0.0,
             score_thr=0.05,
             nms=dict(type='soft_nms', iou_threshold=0.6),
-            # max_per_img=100),
             max_per_img=500),
-        # soft-nms is also supported for rcnn testing
-        # e.g., nms=dict(type='soft_nms', iou_threshold=0.5, min_score=0.05)
     ])
 
 
 
 dataset_type = 'CocoDataset'
-# data_root = 'data/lvis_v1/'
-# data_root = '/home/shen2/dataset_zhb/cocomulti_dataset/FLIR-align-3class-codetr/'
-data_root = '/home/shen2/dataset_zhb/cocomulti_dataset/SeeDroneSee (coco)/'
-# data_root = '/home/shen5/zhb/ODinMJ/coco/'
-# data_root_test = '/home/cp/cp/2023learn/2024-race-cls/2024-gaic/solution/data/'
-#data_root = '/cpfs/user/caoliwei/Project/Co-DETR/solution/data/2024GAIIC_track1/'
+data_root = 'you path to/your_dataset/ '
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-# train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
-# from the default setting in mmdet.
 
 
 
 train_pipeline_no_copypaste = [
-    # dict(type='LoadImageFromFile'),
-    # dict(type='LoadPairedImageFromFile'),
     dict(type='LoadPairedImageFromFile', rgb_folder_name='rgb'),
-    # dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='LoadAnnotations', with_bbox=True),
-    # dict(
-    #     type='Resize',
-    #     img_scale=image_size,
-    #     # ratio_range=(0.1, 2.0),
-    #     ratio_range=(0.5, 2.0),   # clw modify TODO
-    #     multiscale_mode='range',
-    #     keep_ratio=True),
     dict(
         type='PairedImagesResize',
         img_scale=image_size,
         ratio_range=(0.1, 2.5), 
         multiscale_mode='range',
         keep_ratio=True),
-    # dict(
-    #     type='RandomCrop',
-    #     crop_type='absolute_range',
-    #     crop_size=image_size,
-    #     recompute_bbox=True,
-    #     allow_negative_crop=True),
     dict(
         type='PairedImagesRandomCrop',
         crop_type='absolute_range',
-        crop_size=image_size,        # [0]必须小于[1]， 应该是切方形区域
-        # crop_size=(512, 640),
+        crop_size=image_size,       
         recompute_bbox=True,
-        allow_negative_crop=True),   # clw modify TODO: False ? 
-        # allow_negative_crop=False),  
+        allow_negative_crop=True),  
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    # dict(type='RandomFlip', flip_ratio=0.5),
-    # dict(type='RandomFlip', flip_ratio=0.5, direction=['horizontal', 'vertical', 'diagonal']),
-    # dict(type='PairedImagesRandomFlip', flip_ratio=0.5, direction=['horizontal', 'vertical', 'diagonal']),
     dict(type='PairedImagesRandomFlip', flip_ratio=0.5),
-    # dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='PairedImagesAutoAugmentCustom', autoaug_type='v1'), 
-    dict(type='PairedImagesPad', size=image_size, pad_val=dict(img=(114, 114, 114))),  # clw note: (width, height)
-    # dict(type='Normalize', **img_norm_cfg),
+    dict(type='PairedImagesPad', size=image_size, pad_val=dict(img=(114, 114, 114))),
     dict(type='PairedImagesNormalize', **img_norm_cfg),
-    # dict(type='DefaultFormatBundle'),
     dict(type='PairedImagesDefaultFormatBundle'),
-    # dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
-    # dict(type='Collect', keys=['img', 'img_lwir', 'gt_bboxes', 'gt_labels', 'gt_masks']),
     dict(type='Collect', keys=['img', 'img_lwir', 'gt_bboxes', 'gt_labels']),
 ]
 
 test_pipeline = [
-    # dict(type='LoadImageFromFile'),
-    # dict(type='LoadPairedImageFromFile'),
     dict(type='LoadPairedImageFromFile', rgb_folder_name='rgb-2'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=image_size,
         flip=False,
         transforms=[
-            # dict(type='Resize', keep_ratio=True),
             dict(
                 type='PairedImagesResize',
                 img_scale=image_size,
                 keep_ratio=True),
-            # dict(type='RandomFlip'),
-            # dict(type='PairedImagesRandomFlip'),
             dict(type='PairedImagesRandomFlip', test_flip=False),
-            # dict(type='Pad', size=image_size, pad_val=dict(img=(114, 114, 114))),
             dict(type='PairedImagesPad', size=image_size, pad_val=dict(img=(114, 114, 114))), 
-            # dict(type='Normalize', **img_norm_cfg),
             dict(type='PairedImagesNormalize', **img_norm_cfg),
-            # dict(type='ImageToTensor', keys=['img']),
             dict(type='ImageToTensor', keys=['img', 'img_lwir']),
-            # dict(type='Collect', keys=['img'])
             dict(type='Collect', keys=['img', 'img_lwir'])
         ])
 ]
@@ -424,9 +341,7 @@ data = dict(
         img_prefix=data_root + 'val/rgb/',
         pipeline=val_pipeline
         ))
-# evaluation = dict(save_best='auto', interval=1, metric=['bbox', 'segm'])
 evaluation = dict(save_best='bbox_mAP_50', interval=1, metric=['bbox'])
-# evaluation = dict(metric='bbox')
 
 
 
@@ -435,7 +350,6 @@ dist_params = dict(backend='nccl')
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 
 if max_epochs == 12:
-    # steps = [8, 11]
     steps = [8, 11]
 elif max_epochs == 20:
     steps = [16, 19]
@@ -456,28 +370,20 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 
 # optimizer
-# We use layer-wise learning rate decay, but it has not been implemented.
 optimizer = dict(
     type='AdamW',
     lr=5e-5,
-    # lr=1e-4,   # for bs=4 x 4gpu or 2x8gpu
-    # lr=2e-4,   # for bs=4 x 8gpu
     weight_decay=0.05,
-    # custom_keys of sampling_offsets and reference_points in DeformDETR
     paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)}))
 
 
 
-# checkpoint_config = dict(interval=1)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=12)
-# yapf:disable
 log_config = dict(
     interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
-# yapf:enable
 custom_hooks = [dict(type='NumClassCheckHook')]
 
 dist_params = dict(backend='nccl')
@@ -485,20 +391,13 @@ log_level = 'INFO'
 
 workflow = [('train', 1)]
 
-# disable opencv multithreading to avoid system being overloaded
 opencv_num_threads = 0
-# set multi-process start method as `fork` to speed up the training
 mp_start_method = 'fork'
 
-# Default setting for scaling LR automatically
-#   - `enable` means enable scaling LR automatically
-#       or not by default.
-#   - `base_batch_size` = (8 GPUs) x (2 samples per GPU).
 auto_scale_lr = dict(enable=False, base_batch_size=16)
 
 
-# load_from = './data/pretrained_model/co_dino_5scale_vit_large_coco_for_rgbt.pth'
 load_from = None
 resume_from = None
 
-work_dir = '/home/shen5/zhb/2025_5_9/codino_vit_twostream_640_autoaugv1_train1_qcy_seadronesea_nopre'
+work_dir = 'your_path/CoDETR/codino_vit_twostream_640_autoaugv1_train1'
