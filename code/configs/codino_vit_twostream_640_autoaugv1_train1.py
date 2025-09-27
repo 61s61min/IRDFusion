@@ -8,14 +8,14 @@ num_classes = len(classes)
 
 max_epochs = 36
 
-image_size = (640, 640)    # clw modify
+image_size = (640, 640)    
 
 
 
 
 window_block_indexes = (
     list(range(0, 3)) + list(range(4, 7)) + list(range(8, 11)) + list(range(12, 15)) + list(range(16, 19)) +
-    list(range(20, 23)) + list(range(24, 27)))   # for coco
+    list(range(20, 23)) + list(range(24, 27)))   
 residual_block_indexes = []
 
 num_dec_layer = 6
