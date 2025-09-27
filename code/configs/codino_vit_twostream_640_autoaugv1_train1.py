@@ -2,14 +2,15 @@
 #     '../_base_/datasets/lvis_v1_instance.py',
 #     # '../_base_/default_runtime.py'
 # ]
-classes = ('People',)
+# classes = ('People',)
 # classes = ('person',)
 # classes = ('person','car','bicycle')
 # classes = ('Car', 'Truck', 'People', 'Bus', 'Lamp', 'Motor.')
+classes = ('swimmer', 'floater', 'boat', 'human', 'westperson', 'lifejacket', 'ignored',)
 num_classes = len(classes)
 
 # max_epochs = 20
-max_epochs = 12
+max_epochs = 36
 # max_epochs = 16
 
 # image_size = (1536, 1536)
@@ -299,7 +300,8 @@ model = dict(
 dataset_type = 'CocoDataset'
 # data_root = 'data/lvis_v1/'
 # data_root = '/home/shen2/dataset_zhb/cocomulti_dataset/FLIR-align-3class-codetr/'
-data_root = '/home/shen5/zhb/ODinMJ/coco/'
+data_root = '/home/shen2/dataset_zhb/cocomulti_dataset/SeeDroneSee (coco)/'
+# data_root = '/home/shen5/zhb/ODinMJ/coco/'
 # data_root_test = '/home/cp/cp/2023learn/2024-race-cls/2024-gaic/solution/data/'
 #data_root = '/cpfs/user/caoliwei/Project/Co-DETR/solution/data/2024GAIIC_track1/'
 
@@ -423,7 +425,7 @@ data = dict(
         pipeline=val_pipeline
         ))
 # evaluation = dict(save_best='auto', interval=1, metric=['bbox', 'segm'])
-evaluation = dict(save_best='bbox_mAP', interval=1, metric=['bbox'])
+evaluation = dict(save_best='bbox_mAP_50', interval=1, metric=['bbox'])
 # evaluation = dict(metric='bbox')
 
 
@@ -470,7 +472,7 @@ optimizer = dict(
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=12)
 # yapf:disable
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -495,7 +497,8 @@ mp_start_method = 'fork'
 auto_scale_lr = dict(enable=False, base_batch_size=16)
 
 
-load_from = './data/pretrained_model/co_dino_5scale_vit_large_coco_for_rgbt.pth'
+# load_from = './data/pretrained_model/co_dino_5scale_vit_large_coco_for_rgbt.pth'
+load_from = None
 resume_from = None
 
-work_dir = '/home/shen5/zhb/2025_5_9/codino_vit_twostream_640_autoaugv1_train1_IDAT_ODinMJ'
+work_dir = '/home/shen5/zhb/2025_5_9/codino_vit_twostream_640_autoaugv1_train1_qcy_seadronesea_nopre'

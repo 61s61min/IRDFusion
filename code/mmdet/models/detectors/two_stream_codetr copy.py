@@ -14,12 +14,8 @@ from scipy.ndimage import zoom
 from .fusion import KanConvFusionBlock
 from .common import TransformerFusionBlock, TransformerFusionBlockForOnlyTir, NiNfusion, NiNfusion_IR, NiNfusion_RGB, \
     SSF, Add, Iterative_Differential_TransformerFusionBlock, CBAM
-from .common2 import KanConvFusionBlock
 
-# from .common import C2Former
 
-TWO_STREAM_SHARE_NECK = True
-# TWO_STREAM_SHARE_NECK = False
 
 @DETECTORS.register_module()
 class TwoStreamCoDETR(BaseDetector):
@@ -50,67 +46,13 @@ class TwoStreamCoDETR(BaseDetector):
         self.backbone_vis = build_backbone(backbone)  
         self.backbone_lwir = build_backbone(backbone)
 
-
-
-
-        if TWO_STREAM_SHARE_NECK:
-            self.neck = build_neck(neck)   # clw note: 先各自过neck， or 融合后过一个neck
-        else:
-            ############# 方式1 ###############
-            self.neck_vis = build_neck(neck)
-            self.neck_lwir = build_neck(neck)
-            ##################################
-
-            ############# 方式2： backbone和neck都融合 ###############
-            # self.neck = build_neck(neck)
-            # self.neck_lwir = build_neck(neck)
-            ##################################
+        self.neck = build_neck(neck)   # clw note: 先各自过neck， or 融合后过一个neck
+    
 
         self.out_proj = nn.Conv2d(2048,1024,kernel_size=1)
-        if TWO_STREAM_SHARE_NECK:
-            # # fmap_size=(160, 160)
-            # fmap_size=(40, 40)   # for VIT，640x640 input
-            # # dims_out=[96, 192, 384, 768]
-            # dims_out=[1024]
-            # # num_heads=[3, 6, 12, 24]
-            # # num_heads=[3]
-            # num_heads=[8]
-            # # cca_strides=[3, 3, 3, 3]
-            # cca_strides=[3]
-            # # groups=[1, 2, 3, 6]
-            # groups=[1]
-            # # offset_range_factor=[2, 2, 2, 2]
-            # offset_range_factor=[2]
-            # # no_offs=[False, False, False, False]
-            # no_offs=[False]
-            # attn_drop_rate=0.0
-            # drop_rate=0.0
-            # i = 0
-            # hc = dims_out[i] // num_heads[i]
-            # self.tfb_blocks = nn.ModuleList([
-            #     C2Former(fmap_size, fmap_size, num_heads[i], hc, groups[i], attn_drop_rate, drop_rate, cca_strides[i], offset_range_factor[i], no_offs[i], i)
-            # ])
             
-            self.tfb_blocks = nn.ModuleList([     # (256, 64, 80), (512, 32, 40), (1024, 16, 20), (2048, 8, 10)           对于yolo640输入，原始特征图80, 40, 20 -> 20, 16, 10
+        self.tfb_blocks = nn.ModuleList([     # (256, 64, 80), (512, 32, 40), (1024, 16, 20), (2048, 8, 10)           对于yolo640输入，原始特征图80, 40, 20 -> 20, 16, 10
                 
-                # TransformerFusionBlock(192, 64, 80),   # clw note: 128, 160 may cause oom
-                # ##### TransformerFusionBlock(192, 96, 120),  
-                # TransformerFusionBlock(384, 64, 80),    #           
-                # TransformerFusionBlock(768, 32, 40),    #            
-                # TransformerFusionBlock(1536, 16, 20), 
-
-                # TransformerFusionBlock(192, 64, 80),   # backbone s4
-                # TransformerFusionBlock(384, 32, 40),    #           s8
-                # TransformerFusionBlock(768, 16, 20),    #            s16
-                # TransformerFusionBlock(1536, 8, 10),    #             s32
-
-
-
-                # TransformerFusionBlockForOnlyTir(192, 64, 80),   # backbone s4
-                # TransformerFusionBlockForOnlyTir(384, 32, 40),    #           s8
-                # TransformerFusionBlockForOnlyTir(768, 16, 20),    #            s16
-                # TransformerFusionBlockForOnlyTir(1536, 8, 10),   
-
                 ############# for VIT, 
                 # Iterative_Differential_TransformerFusionBlock(1024, 40, 40),    # 640 input
                 # CBAM(2048)
@@ -125,45 +67,10 @@ class TwoStreamCoDETR(BaseDetector):
                 # Iterative_Differential_TransformerFusionBlock_FDOMdualfeedback(1024,40,40)
                 # TransformerFusionBlock(1024, 80, 80),    # 1280 input
                 # TransformerFusionBlock(1024, 48, 48),    # 1536 input
-                # TransformerFusionBlock(1024, 40, 40),
-                KanConvFusionBlock(1024,40,40)
+                TransformerFusionBlock(1024, 40, 40),
                 # SSF(1024)
                 # Add()
             ])
-
-        else:
-            ######################## 方式1：只neck融合 ##########
-            self.tfb_blocks = nn.ModuleList([
-                TransformerFusionBlock(256, 80, 80),  
-                TransformerFusionBlock(256, 40, 40),  
-                TransformerFusionBlock(256, 20, 20),  
-                TransformerFusionBlock(256, 10, 10),  
-                TransformerFusionBlock(256, 5, 5),  
-            ])
-            ##############################
-
-
-            ######################## 方式2：backbone, neck都融合 ##########
-            # self.tfb_blocks_backbone = nn.ModuleList([     # (256, 64, 80), (512, 32, 40), (1024, 16, 20), (2048, 8, 10)           对于yolo640输入，原始特征图80, 40, 20 -> 20, 16, 10
-            #     TransformerFusionBlock(1024, 40, 40),  
-            # ])
-                        
-            # self.tfb_blocks = nn.ModuleList([
-            #     TransformerFusionBlock(256, 80, 80),  
-            #     TransformerFusionBlock(256, 40, 40),  
-            #     TransformerFusionBlock(256, 20, 20),  
-            #     TransformerFusionBlock(256, 10, 10),  
-            #     TransformerFusionBlock(256, 5, 5),  
-            # ])
-            ##############################
-
-
-                        
-        ##############################
-
-        # self.backbone = build_backbone(backbone)
-        # if neck is not None:
-        #     self.neck = build_neck(neck)
             
         head_idx = 0
 
@@ -244,14 +151,12 @@ class TwoStreamCoDETR(BaseDetector):
     def extract_visfeat(self, img):
         """Directly extract features from the backbone+neck."""
         x = self.backbone_vis(img)
-        # if self.with_neck:  
         x = self.neck_vis(x)
         return x
     
     def extract_lwirfeat(self, img):
         """Directly extract features from the backbone+neck."""
         x = self.backbone_lwir(img)   # [(1, 192, 128, 160), (1, 384, 64, 80), ..., (1, 1536, 16, 20)]
-        # if self.with_neck:
         x = self.neck_lwir(x)
         return x
     #########################
@@ -395,57 +300,19 @@ class TwoStreamCoDETR(BaseDetector):
 
 
 
-        # x = self.extract_feat(img, img_metas)
 
-        ########################## clw modify： 先融合，后过neck
-        if TWO_STREAM_SHARE_NECK: 
-            x_vis = self.backbone_vis(img)   # 对于VIT backbone： x_vis[0].shape: list -> (1, 1024, 40, 40)
-            x_lwir = self.backbone_lwir(img_lwir)
-            x = []
-            # import pdb; pdb.set_trace()
-            for i in range(len(x_vis)):   # VIT只有一层输出，torch.Size([1, 1024, h//16, w//16])
-                #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-                # x.append(self.tfb_blocks[i]( [x_vis[i], x_lwir[i]] ))
-                # fea = torch.cat((x_vis[i], x_lwir[i]), dim=1)
-                x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
+        x_vis = self.backbone_vis(img)   # 对于VIT backbone： x_vis[0].shape: list -> (1, 1024, 40, 40)
+        x_lwir = self.backbone_lwir(img_lwir)
+        x = []
+        # import pdb; pdb.set_trace()
+        for i in range(len(x_vis)):   # VIT只有一层输出，torch.Size([1, 1024, h//16, w//16])
+            #x.append(0.5 * (x_vis[i] + x_lwir[i]))
+            # x.append(self.tfb_blocks[i]( [x_vis[i], x_lwir[i]] ))
+            # fea = torch.cat((x_vis[i], x_lwir[i]), dim=1)
+            x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
 
-            x = tuple(x)
-            x = self.neck(x)    # (1, 256, h//4, w//4) -> (1, 256, h//64, w//64)
-            
-        else:
-            ##################### 方式1：##############
-            x_vis = self.extract_visfeat(img)  
-            x_lwir = self.extract_lwirfeat(img_lwir)
-            x = []
-            for i in range(len(x_vis)):
-                #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-                x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
-            x = tuple(x)
-            ###########################################
-
-
-            ##################### 方式2：backbone和neck都融合 （实测效果不好........） ##################
-            # x_vis = self.backbone_vis(img)
-            # x_lwir = self.backbone_lwir(img_lwir)
-            # x = []
-            # for i in range(len(x_vis)):   # VIT只有一层输出，torch.Size([1, 1024, h//16, w//16])
-            #     #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-            #     x.append(self.tfb_blocks_backbone[i]( [x_vis[i], x_lwir[i]] ))
-            # x = tuple(x)
-            
-            # x_fusion = self.neck(x)
-            # x_lwir = self.neck_lwir(x_lwir)
-            # # import pdb; pdb.set_trace()
-            # x_after = []
-            # for i in range(len(x_lwir)):
-            #     x_after.append(self.tfb_blocks[i]( x_fusion[i], x_lwir[i] ))
-            # x = tuple(x_after)
-            #########################################
-
-
-       ############################
-
-
+        x = tuple(x)
+        x = self.neck(x)    # (1, 256, h//4, w//4) -> (1, 256, h//64, w//64)
         losses = dict()
         def upd_loss(losses, idx, weight=1):
             new_losses = dict()
@@ -567,104 +434,70 @@ class TwoStreamCoDETR(BaseDetector):
         ########################################## clw modify TODO
 
 
-        if TWO_STREAM_SHARE_NECK:   # 先融合，后过neck
-            x_vis = self.backbone_vis(img)
-            x_lwir = self.backbone_lwir(img_lwir)
-            x = []
-            # loop = 6
-            loop ='NiN'
-            vis = False
-            for i in range(len(x_vis)):
-                if vis:
-                    img_name = img_metas[0]['filename'].split('/')[-1].split('.')[0]
-                    dataset_name = img_metas[0]['filename'].split('/')[3]
-                    out_fea_path = 'D:/master/double-co-detr/'+dataset_name+'/feat/'+img_name+'/'
-                    os.makedirs(out_fea_path, exist_ok=True)
-                    rgb = x_vis[i].cpu().numpy()
-                    ir = x_lwir[i].cpu().numpy()
-                    rgb_img = np.mean(rgb[0], axis=0)
-                    ir_img = np.mean(ir[0], axis=0)
-                    # np.save(out_fea_path+'rgbin'+str(loop)+'.npy', rgb)
-                    # np.save(out_fea_path+'irin'+str(loop)+'.npy', ir)
-                    zoom_factors = 2  # (深度方向不变，行方向放大2倍，列方向放大2倍)
-                    resized_rgb = zoom(rgb_img, zoom_factors, order=1)  # order=1 表示线性插值
-                    resized_ir = zoom(ir_img, zoom_factors, order=1)  # order=1 表示线性插值
+        x_vis = self.backbone_vis(img)
+        x_lwir = self.backbone_lwir(img_lwir)
+        x = []
+        # loop = 6
+        loop ='NiN'
+        vis = False
+        for i in range(len(x_vis)):
+            if vis:
+                img_name = img_metas[0]['filename'].split('/')[-1].split('.')[0]
+                dataset_name = img_metas[0]['filename'].split('/')[3]
+                out_fea_path = 'D:/master/double-co-detr/'+dataset_name+'/feat/'+img_name+'/'
+                os.makedirs(out_fea_path, exist_ok=True)
+                rgb = x_vis[i].cpu().numpy()
+                ir = x_lwir[i].cpu().numpy()
+                rgb_img = np.mean(rgb[0], axis=0)
+                ir_img = np.mean(ir[0], axis=0)
+                # np.save(out_fea_path+'rgbin'+str(loop)+'.npy', rgb)
+                # np.save(out_fea_path+'irin'+str(loop)+'.npy', ir)
+                zoom_factors = 2  # (深度方向不变，行方向放大2倍，列方向放大2倍)
+                resized_rgb = zoom(rgb_img, zoom_factors, order=1)  # order=1 表示线性插值
+                resized_ir = zoom(ir_img, zoom_factors, order=1)  # order=1 表示线性插值
 
-                    plt.imshow(rgb_img, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path+'rgbin_'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
+                plt.imshow(rgb_img, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path+'rgbin_'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
 
-                    plt.imshow(ir_img, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path + 'irin'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
+                plt.imshow(ir_img, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path + 'irin'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
 
-                    plt.imshow(resized_rgb, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path + 'resized_rgb'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
+                plt.imshow(resized_rgb, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path + 'resized_rgb'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
 
-                    plt.imshow(resized_ir, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path + 'resized_ir'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
-
-
-                #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-                # fea = torch.cat((x_vis[i], x_lwir[i]), dim=1)
-                # x.append(self.out_proj(self.tfb_blocks[i](fea)))
-                x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
-                if vis:
-                    out = x[0].cpu().numpy()
-                    # np.save(out_fea_path + 'out.npy', out)
-                    out_img = np.mean(out[0], axis=0)
-                    plt.imshow(out_img, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path + 'out'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
-
-                    resized_out = zoom(out_img, zoom_factors, order=1)  # order=1 表示线性插值
-
-                    plt.imshow(resized_out, cmap='viridis')
-                    plt.axis('off')  # 去掉坐标轴
-                    plt.savefig(out_fea_path + 'resized_out'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
-                    plt.close()
-            x = tuple(x)
-            x = self.neck(x)
-        else:
-            ##################### 方式1：##############
-            x_vis = self.extract_visfeat(img)  
-            x_lwir = self.extract_lwirfeat(img_lwir)
-            x = []
-            for i in range(len(x_vis)):
-                #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-                x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
-            x = tuple(x)
-            ###########################################
+                plt.imshow(resized_ir, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path + 'resized_ir'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
 
 
-            ##################### 方式2： backbone和neck都融合 ##################
-            # x_vis = self.backbone_vis(img)
-            # x_lwir = self.backbone_lwir(img_lwir)
-            # x = []
-            # for i in range(len(x_vis)):   # VIT只有一层输出，torch.Size([1, 1024, h//16, w//16])
-            #     #x.append(0.5 * (x_vis[i] + x_lwir[i]))
-            #     x.append(self.tfb_blocks_backbone[i]( [x_vis[i], x_lwir[i]] ))
-            # x = tuple(x)
-            
-            # x_fusion = self.neck(x)
-            # x_lwir = self.neck_lwir(x_lwir)
-            # x_after = []
-            # for i in range(len(x_lwir)):
-            #     x_after.append(self.tfb_blocks[i]( x_fusion[i], x_lwir[i] ))
-            # x = tuple(x_after)
-            #########################################
+            #x.append(0.5 * (x_vis[i] + x_lwir[i]))
+            # fea = torch.cat((x_vis[i], x_lwir[i]), dim=1)
+            # x.append(self.out_proj(self.tfb_blocks[i](fea)))
+            x.append(self.tfb_blocks[i]( x_vis[i], x_lwir[i] ))
+            if vis:
+                out = x[0].cpu().numpy()
+                # np.save(out_fea_path + 'out.npy', out)
+                out_img = np.mean(out[0], axis=0)
+                plt.imshow(out_img, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path + 'out'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
 
-        ########################################
+                resized_out = zoom(out_img, zoom_factors, order=1)  # order=1 表示线性插值
 
-
-
+                plt.imshow(resized_out, cmap='viridis')
+                plt.axis('off')  # 去掉坐标轴
+                plt.savefig(out_fea_path + 'resized_out'+str(loop)+'.png', bbox_inches='tight', pad_inches=0)
+                plt.close()
+        x = tuple(x)
+        x = self.neck(x)
         results_list = self.query_head.simple_test(
             x, img_metas, rescale=rescale)
         bbox_results = [

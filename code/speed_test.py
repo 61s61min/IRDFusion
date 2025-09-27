@@ -22,13 +22,14 @@ dataset = 'FLIR'
 root = '/home/shen2/zhb/doublecodetrIDAT/'+dataset+'/rgb/'
 json_root = 'D:/master/double-co-detr/'+dataset
 
-config_file = '/home/shen2/zhb/doublecodetrIDAT/code/configs/codino_vit_twostream_640_autoaugv1_train1.py'
+config_file = '/home/shen5/zhb/2025_5_9/codino_vit_twostream_640_autoaugv1_train1_qcy_seadronesea/codino_vit_twostream_640_autoaugv1_train1.py'
 # checkpoint_file = 'D:/master/double-co-detr/weight/codino_vit_twostream_640_autoaugv1_train1_IDAT_loop'+str(loop)+'/best_IDAT_FLIR_'+str(loop)+'.pth'
-checkpoint_file = '/home/shen2/zhb/2025_1_15/codino_vit_twostream_640_autoaugv1_train1_ISDF_FDOMdualfeedback_FLIR/best_bbox_mAP_50_epoch_12.pth'
+# checkpoint_file = '/home/shen2/zhb/2025_1_15/codino_vit_twostream_640_autoaugv1_train1_ISDF_FDOMdualfeedback_FLIR/best_bbox_mAP_50_epoch_12.pth'
+checkpoint_file = '/home/shen5/zhb/2025_5_9/codino_vit_twostream_640_autoaugv1_train1_qcy_seadronesea/best_bbox_mAP_50_epoch_26.pth'
 # 配置模型
 model = init_detector(config=config_file,
                       checkpoint=checkpoint_file,
-                      device='cuda:0')
+                      device='cpu')
 datas = []
 cfg = model.cfg
 img = '/home/shen2/zhb/doublecodetrIDAT/FLIR/rgb/FLIR_08864.jpg'

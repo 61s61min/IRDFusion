@@ -87,6 +87,78 @@ class NiNfusion_IR(nn.Module):
 
         return ir
 
+# 通道注意力模块
+class Channel_Attention(nn.Module):
+    def __init__(self, in_channels, reduction_ratio=16, pool_types=['avg', 'max']):
+        '''
+        :param in_channels: 输入通道数
+        :param reduction_ratio: 输出通道数量的缩放系数
+        :param pool_types: 池化类型
+        '''
+
+        super(Channel_Attention, self).__init__()
+
+        self.pool_types = pool_types
+        self.in_channels = in_channels
+        self.shared_mlp = nn.Sequential(nn.Flatten(),
+                                        nn.Linear(in_features=in_channels, out_features=in_channels//reduction_ratio),
+                                        nn.ReLU(),
+                                        nn.Linear(in_features=in_channels//reduction_ratio, out_features=in_channels)
+                                        )
+
+    def forward(self, x):
+        channel_attentions = []
+
+        for pool_types in self.pool_types:
+            if pool_types == 'avg':
+                pool_init = nn.AvgPool2d(kernel_size=(x.size(2), x.size(3)))
+                avg_pool = pool_init(x)
+                channel_attentions.append(self.shared_mlp(avg_pool))
+            elif pool_types == 'max':
+                pool_init = nn.MaxPool2d(kernel_size=(x.size(2), x.size(3)))
+                max_pool = pool_init(x)
+                channel_attentions.append(self.shared_mlp(max_pool))
+
+        pooling_sums = torch.stack(channel_attentions, dim=0).sum(dim=0)
+        output = nn.Sigmoid()(pooling_sums).unsqueeze(2).unsqueeze(3).expand_as(x)
+
+        return x * output
+
+
+# 空间注意力模块
+class Spatial_Attention(nn.Module):
+    def __init__(self, kernel_size=7):
+        super(Spatial_Attention, self).__init__()
+
+        self.spatial_attention = nn.Sequential(nn.Conv2d(in_channels=2, out_channels=1, kernel_size=kernel_size, stride=1, dilation=1, padding=(kernel_size-1)//2, bias=False),
+                                               nn.BatchNorm2d(num_features=1, eps=1e-5, momentum=0.01, affine=True)
+                                               )
+
+    def forward(self, x):
+        x_compress = torch.cat((torch.max(x, 1)[0].unsqueeze(1), torch.mean(x, 1).unsqueeze(1)), dim=1)  # 在通道维度上分别计算平均值和最大值，并在通道维度上进行拼接
+        x_output = self.spatial_attention(x_compress)  # 使用7x7卷积核进行卷积
+        scaled = nn.Sigmoid()(x_output)
+
+        return x * scaled  # 将输入F'和通道注意力模块的输出Ms相乘，得到F''
+
+
+class CBAM(nn.Module):
+    def __init__(self, in_channels, reduction_ratio=16, pool_types=['avg', 'max'], spatial=True):
+        super(CBAM, self).__init__()
+
+        self.spatial = spatial
+        self.channel_attention = Channel_Attention(in_channels=in_channels, reduction_ratio=reduction_ratio, pool_types=pool_types)
+
+        if self.spatial:
+            self.spatial_attention = Spatial_Attention(kernel_size=7)
+
+    def forward(self, x):
+        x_out = self.channel_attention(x)
+        if self.spatial:
+            x_out = self.spatial_attention(x_out)
+
+        return x_out
+
 class LearnableCoefficient(nn.Module):
     def __init__(self):
         super(LearnableCoefficient, self).__init__()
@@ -431,10 +503,12 @@ class CrossAttention(nn.Module):
         k_ir = self.key_proj_ir(ir_fea_flat).contiguous().view(b_s, nk, self.h, self.d_k).permute(0, 2, 3, 1)  # (b_s, h, d_k, nk) K^T
         v_ir = self.val_proj_ir(ir_fea_flat).contiguous().view(b_s, nk, self.h, self.d_v).permute(0, 2, 1, 3)  # (b_s, h, nk, d_v)
 
-        att_vis = torch.matmul(q_ir, k_vis) / np.sqrt(self.d_k)
-        att_ir = torch.matmul(q_vis, k_ir) / np.sqrt(self.d_k)
+        # att_vis = torch.matmul(q_ir, k_vis) / np.sqrt(self.d_k)
+        # att_ir = torch.matmul(q_vis, k_ir) / np.sqrt(self.d_k)
         # att_vis = torch.matmul(k_vis, q_ir) / np.sqrt(self.d_k)
         # att_ir = torch.matmul(k_ir, q_vis) / np.sqrt(self.d_k)
+        att_vis = torch.matmul(q_vis, k_vis) / np.sqrt(self.d_k)
+        att_ir = torch.matmul(q_ir, k_ir) / np.sqrt(self.d_k)
 
         # get attention matrix
         att_vis = torch.softmax(att_vis, -1)
@@ -5484,4 +5558,6 @@ class SSF(nn.Module):
             x_new.append(x_e)
             x_feat = self.cm_fusion(x_new)
         return x_feat
+
+
 
