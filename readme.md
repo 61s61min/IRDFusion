@@ -14,9 +14,11 @@ Paper download in [IRDFusion](https://arxiv.org/html/2509.09085v1)
 </div>
 
 ## Cite us  
-@article{shen2025irdfusion,     
-    title={IRDFusion: Iterative Relation-Map Difference guided Feature Fusion for Multispectral Object Detection},    
-    author={Shen, Jifeng and Zhan, Haibo and Zuo, Xin and Fan, Heng and Yuan, Xiaohui and Li, Jun and Yang, Wankou},  
-    journal={arXiv preprint arXiv:2509.09085},    
-    year={2025}   
+@article{shen2026irdfusion,    
+  title={IRDFusion: Iterative relation-map difference guided feature fusion for multispectral object detection},    
+  author={Shen, Jifeng and Zhan, Haibo and Zuo, Xin and Fan, Heng and Yuan, Xiaohui and Li, Jun and Yang, Wankou},     
+  journal={Pattern Recognition},     
+  pages={113189},    
+  year={2026},   
+  publisher={Elsevier}    
 }
