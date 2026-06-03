@@ -11,7 +11,10 @@ Paper download in [IRDFusion](https://arxiv.org/html/2509.09085v1)
 <div align="center">
   <img src="overview.png" width="1200px">
   <div style="color:orange; border-bottom: 10px solid #d9d9d9; display: inline-block; color: #999; padding: 10px;"> Fig 1. Overview of our multispectral object detection framework </div>
-</div>
+</div>     
+      
+## Weights    
+Weights now are available at https://drive.google.com/drive/folders/1qbRkwi48xyDfSd-rl5AA1fusx3u9SAwn?usp=drive_link
 
 ## Cite us  
 @article{shen2026irdfusion,    
