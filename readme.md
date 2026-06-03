@@ -12,6 +12,31 @@ Paper download in [IRDFusion](https://arxiv.org/html/2509.09085v1)
   <img src="overview.png" width="1200px">
   <div style="color:orange; border-bottom: 10px solid #d9d9d9; display: inline-block; color: #999; padding: 10px;"> Fig 1. Overview of our multispectral object detection framework </div>
 </div>     
+ 
+## Results    
+**FLIR** 
+| Detector | mAP@50 | mAP@75 | mAP |
+| --- | --- | --- | --- |
+| YOLOv5 | 84.8 | 38.1 | 43.4 |
+| Co-DETR | 88.3 | 48.0 | 50.7 |
+* 
+**LLVIP** 
+| Detector | mAP@50 | mAP@75 | mAP |
+| --- | --- | --- | --- |
+| YOLOv5 | 97.9 | 75.7 | 65.5 |
+| Co-DETR | 98.4 | 83.1 | 70.9 |
+* 
+**M³FD** 
+| Detector | mAP@50 | mAP@75 | mAP |
+| --- | --- | --- | --- |
+| YOLOv5 | 89.8 | 65.8 | 60.5 |
+| Co-DETR | 90.8 | 65.4 | 61.9 |   
+* 
+**M4-SAR (YOLOv11 OBB)**
+| bridge | harbor | oil_tank | playground | airport | wind_turbine | mAP@50 | mAP |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 77.2 | 93.9 | 66.5 | 93.2 | 90.2 | 98.4 | 86.5 | 62.4 |
+
       
 ## Weights    
 Weights now are available at https://drive.google.com/drive/folders/1qbRkwi48xyDfSd-rl5AA1fusx3u9SAwn?usp=drive_link
