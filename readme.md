@@ -41,6 +41,8 @@ Paper download in [IRDFusion](https://arxiv.org/html/2509.09085v1)
 ## Weights    
 Weights now are available at https://drive.google.com/drive/folders/1qbRkwi48xyDfSd-rl5AA1fusx3u9SAwn?usp=drive_link
 
+Also available on [Baidu Netdisk](https://pan.baidu.com/s/19pWNoiDy1RX5T7IKn8gk8g?pwd=9mb3) (extraction code: `9mb3`).
+
 ## Cite us  
 @article{shen2026irdfusion,    
   title={IRDFusion: Iterative relation-map difference guided feature fusion for multispectral object detection},    
